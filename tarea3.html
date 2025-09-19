@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propagación del Error - Métodos Numéricos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #d8f8e9 0%, #09d41a 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(110, 145, 139, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #000000;
+            font-size: 1.2em;
+            font-weight: 300;
+        }
+
+        nav {
+            background: rgba(123, 141, 137, 0.9);
+            padding: 15px 0;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #212325;
+            font-weight: 600;
+            padding: 12px 25px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        nav a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        nav a:hover::before {
+            left: 0;
+        }
+
+        nav a:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .theory-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .problem-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border-left: 5px solid #83d8c3;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .problem-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #34495e;
+            font-size: 1.5em;
+            margin: 25px 0 15px;
+            position: relative;
+        }
+
+        h3::before {
+            content: '▶';
+            color: #3498db;
+            margin-right: 10px;
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #3498db;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-box {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            border: 2px solid #27ae60;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .solution-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffeaa7 100%);
+            border: 2px solid #f39c12;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .error-analysis {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffebee 100%);
+            border: 2px solid #e74c3c;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .calculator input, .calculator button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 8px;
+            border: 2px solid #3498db;
+            font-size: 16px;
+        }
+
+        .calculator button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calculator button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-display {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+        }
+
+        .code-section {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffecb5;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .highlight {
+            animation: pulse 2s infinite;
+        }
+
+        .problem-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h4>DE: LEONOR BELEN CHAVRRIA DE LA CRUZ C.I.:9885133 </h4>
+            <h1>Propagación del Error</h1>
+            <p class="subtitle">Métodos Numéricos - Teoría de Errores</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#teoria">Teoría</a></li>
+                <li><a href="#problema1">Problema 1</a></li>
+                <li><a href="#problema2">Problema 2</a></li>
+            </ul>
+        </nav>
+
+        <section id="teoria" class="theory-section">
+            <h2>Fundamentos Teóricos</h2>
+            
+            <h3>¿Qué es la Propagación del Error?</h3>
+            <p>La propagación del error es un fenómeno que ocurre cuando los errores en las mediciones o datos de entrada se transmiten a través de cálculos matemáticos, afectando la precisión del resultado final.</p>
+
+            <div class="formula-box">
+                <h4>Fórmulas de Propagación de Error</h4>
+                <p><strong>Para suma y resta:</strong></p>
+                <p>$$\Delta z = \sqrt{(\Delta x)^2 + (\Delta y)^2}$$</p>
+                <p><strong>Para multiplicación y división:</strong></p>
+                <p>$$\frac{\Delta z}{z} = \sqrt{\left(\frac{\Delta x}{x}\right)^2 + \left(\frac{\Delta y}{y}\right)^2}$$</p>
+                <p><strong>Para funciones generales:</strong></p>
+                <p>$$\Delta z = \sqrt{\left(\frac{\partial f}{\partial x}\Delta x\right)^2 + \left(\frac{\partial f}{\partial y}\Delta y\right)^2}$$</p>
+            </div>
+
+            <div class="warning">
+                <strong>Nota Importante:</strong> En métodos numéricos, es crucial entender cómo los errores se propagan para evaluar la confiabilidad de nuestros resultados computacionales.
+            </div>
+        </section>
+
+        <section id="problema1" class="problem-section">
+            <h2><span class="problem-number">32</span>Datación por Carbono-14</h2>
+            
+            <div class="data-box">
+                <h3>Enunciado del Problema</h3>
+                <p>El decaimiento radiactivo del carbono-14 se usa para estimar la edad de material orgánico. El decaimiento se modela con la función exponencial:</p>
+                <div class="formula-box">
+                    $$f(t) = f(0)e^{kt}$$
+                </div>
+                <p>donde:</p>
+                <ul>
+                    <li><strong>t</strong> es el tiempo</li>
+                    <li><strong>f(0)</strong> es la cantidad inicial de material en t = 0</li>
+                    <li><strong>f(t)</strong> es la cantidad de material en el tiempo t</li>
+                    <li><strong>k</strong> es una constante</li>
+                </ul>
+                
+                <p><strong>Datos:</strong></p>
+                <ul>
+                    <li>Vida media del carbono-14: aproximadamente 5,730 años</li>
+                    <li>Una muestra de las huellas antiguas de Acahualinca en Nicaragua muestra que el 77.45% del carbono-14 inicial está presente</li>
+                </ul>
+                
+                <p><strong>Objetivo:</strong> Determinar la edad estimada de las huellas.</p>
+            </div>
+
+            <div class="solution-box">
+                <h3>Solución Paso a Paso</h3>
+                
+                <div class="step">
+                    <h4>Paso 1: Determinar la constante k</h4>
+                    <p>Usando la vida media (5,730 años):</p>
+                    <p>$$\frac{1}{2} = e^{k \cdot 5730}$$</p>
+                    <p>$$k = \frac{\ln(0.5)}{5730} = \frac{-0.6931}{5730} = -1.209 \times 10^{-4} \text{ año}^{-1}$$</p>
+                </div>
+
+                <div class="step">
+                    <h4>Paso 2: Resolver para t</h4>
+                    <p>Dado que f(t) = 0.7745 f(0):</p>
+                    <p>$$0.7745 = e^{kt}$$</p>
+                    <p>$$\ln(0.7745) = kt$$</p>
+                    <p>$$t = \frac{\ln(0.7745)}{k} = \frac{-0.2554}{-1.209 \times 10^{-4}} = 2112.8 \text{ años}$$</p>
+                </div>
+
+                <div class="calculator">
+                    <h4>Calculadora del Problema 1</h4>
+                    <label>Porcentaje restante (%): <input type="number" id="percentage1" value="77.45" step="0.01"></label><br>
+                    <label>Vida media (años): <input type="number" id="halflife1" value="5730" step="1"></label><br>
+                    <button onclick="calculateAge()">Calcular Edad</button>
+                    <div id="result1" class="result-display">Resultado: 2113 años</div>
+                </div>
+            </div>
+
+            <div class="error-analysis">
+                <h3>Análisis de Propagación del Error</h3>
+                <p>Los errores en este problema provienen de:</p>
+                <ul>
+                    <li><strong>Error en la medición del porcentaje:</strong> ±0.01%</li>
+                    <li><strong>Error en la vida media:</strong> ±40 años</li>
+                    <li><strong>Errores de redondeo computacional</strong></li>
+                </ul>
+                
+                <div class="formula-box">
+                    <p><strong>Propagación del error para t:</strong></p>
+                    <p>$$\Delta t = \sqrt{\left(\frac{\partial t}{\partial P}\Delta P\right)^2 + \left(\frac{\partial t}{\partial \tau}\Delta \tau\right)^2}$$</p>
+                    <p>donde P es el porcentaje y τ es la vida media.</p>
+                </div>
+
+                <div class="calculator">
+                    <h4>Análisis de Error - Problema 1</h4>
+                    <label>Error en porcentaje (±%): <input type="number" id="errorP1" value="0.1" step="0.01"></label><br>
+                    <label>Error en vida media (±años): <input type="number" id="errorT1" value="40" step="1"></label><br>
+                    <button onclick="calculateErrorP1()">Calcular Propagación del Error</button>
+                    <div id="errorResult1" class="result-display">Error propagado: ±25 años</div>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <h4>Código de Solución</h4>
+                <pre><code>% Problema 32 - Datación por Carbono-14
+clear; clc;
+
+% Datos
+half_life = 5730;  % años
+percentage_remaining = 0.7745;  % 77.45%
+
+% Calcular constante k
+k = log(0.5) / half_life;
+
+% Calcular edad
+age = log(percentage_remaining) / k;
+
+% Redondear al año más cercano
+age_rounded = round(age);
+
+fprintf('Constante k: %.6e por año\n', k);
+fprintf('Edad estimada: %.1f años\n', age);
+fprintf('Edad redondeada: %d años\n', age_rounded);</code></pre>
+            </div>
+        </section>
+
+        <section id="problema2" class="problem-section">
+            <h2><span class="problem-number">36</span>Ley de Enfriamiento de Newton</h2>
+            
+            <div class="data-box">
+                <h3>Enunciado del Problema</h3>
+                <p>La ley de enfriamiento de Newton establece que la temperatura T(t) de un objeto en el tiempo t está dada por:</p>
+                <div class="formula-box">
+                    $$T(t) = T_s + (T_0 - T_s)e^{-kt}$$
+                </div>
+                <p>donde:</p>
+                <ul>
+                    <li><strong>T₀</strong> es la temperatura inicial en t = 0</li>
+                    <li><strong>Tₛ</strong> es la temperatura del ambiente</li>
+                    <li><strong>k</strong> es una constante</li>
+                </ul>
+                
+                <p><strong>Escenario:</strong> Un oficial de policía llega a una escena del crimen en una habitación de hotel a las 9:18 PM, donde encuentra un cuerpo muerto. Inmediatamente mide la temperatura del cuerpo y encuentra que es 79.5°F. Exactamente una hora después mide la temperatura nuevamente y encuentra que es 78.5°F.</p>
+                
+                <p><strong>Datos adicionales:</strong></p>
+                <ul>
+                    <li>Temperatura corporal normal: 98.6°F</li>
+                    <li>Temperatura constante de la habitación: 69°F</li>
+                </ul>
+                
+                <p><strong>Objetivo:</strong> Determinar la hora de muerte.</p>
+            </div>
+
+            <div class="solution-box">
+                <h3>Solución Paso a Paso</h3>
+                
+                <div class="step">
+                    <h4>Paso 1: Configurar las ecuaciones</h4>
+                    <p>Sea t = 0 la hora de muerte. Tenemos:</p>
+                    <ul>
+                        <li>T₀ = 98.6°F (temperatura corporal normal)</li>
+                        <li>Tₛ = 69°F (temperatura ambiente)</li>
+                        <li>T(t₁) = 79.5°F en algún tiempo t₁</li>
+                        <li>T(t₁ + 1) = 78.5°F una hora después</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <h4>Paso 2: Establecer el sistema de ecuaciones</h4>
+                    <p>$$79.5 = 69 + (98.6 - 69)e^{-kt_1}$$</p>
+                    <p>$$78.5 = 69 + (98.6 - 69)e^{-k(t_1 + 1)}$$</p>
+                    <p>Simplificando:</p>
+                    <p>$$10.5 = 29.6e^{-kt_1}$$</p>
+                    <p>$$9.5 = 29.6e^{-k(t_1 + 1)}$$</p>
+                </div>
+
+                <div class="step">
+                    <h4>Paso 3: Resolver para k</h4>
+                    <p>Dividiendo la segunda ecuación por la primera:</p>
+                    <p>$$\frac{9.5}{10.5} = e^{-k}$$</p>
+                    <p>$$k = -\ln\left(\frac{9.5}{10.5}\right) = 0.1001 \text{ hora}^{-1}$$</p>
+                </div>
+
+                <div class="step">
+                    <h4>Paso 4: Encontrar t₁</h4>
+                    <p>$$e^{-kt_1} = \frac{10.5}{29.6}$$</p>
+                    <p>$$t_1 = \frac{\ln(29.6/10.5)}{k} = \frac{1.033}{0.1001} = 10.32 \text{ horas}$$</p>
+                </div>
+
+                <div class="calculator">
+                    <h4>Calculadora del Problema 2</h4>
+                    <label>Temperatura inicial (°F): <input type="number" id="T0" value="98.6" step="0.1"></label><br>
+                    <label>Temperatura ambiente (°F): <input type="number" id="Ts" value="69" step="0.1"></label><br>
+                    <label>Primera medición (°F): <input type="number" id="T1" value="79.5" step="0.1"></label><br>
+                    <label>Segunda medición (°F): <input type="number" id="T2" value="78.5" step="0.1"></label><br>
+                    <button onclick="calculateTimeOfDeath()">Calcular Hora de Muerte</button>
+                    <div id="result2" class="result-display">Tiempo transcurrido: 10.32 horas</div>
+                </div>
+            </div>
+
+            <div class="error-analysis">
+                <h3>Análisis de Propagación del Error</h3>
+                <p>Los errores en este problema incluyen:</p>
+                <ul>
+                    <li><strong>Error en las mediciones de temperatura:</strong> ±0.1°F</li>
+                    <li><strong>Error en la temperatura ambiente:</strong> ±0.5°F</li>
+                    <li><strong>Asunción de temperatura corporal normal:</strong> ±0.5°F</li>
+                    <li><strong>Errores computacionales en logaritmos</strong></li>
+                </ul>
+                
+                <div class="formula-box">
+                    <p><strong>Propagación del error para t₁:</strong></p>
+                    <p>$$\Delta t_1 = \sqrt{\sum_{i} \left(\frac{\partial t_1}{\partial x_i}\Delta x_i\right)^2}$$</p>
+                    <p>donde x₁ incluye todas las temperaturas medidas.</p>
+                </div>
+
+                <div class="calculator">
+                    <h4>Análisis de Error - Problema 2</h4>
+                    <label>Error en mediciones (±°F): <input type="number" id="tempError" value="0.1" step="0.01"></label><br>
+                    <label>Error en T₀ (±°F): <input type="number" id="T0Error" value="0.5" step="0.1"></label><br>
+                    <label>Error en Tₛ (±°F): <input type="number" id="TsError" value="0.5" step="0.1"></label><br>
+                    <button onclick="calculateErrorP2()">Calcular Propagación del Error</button>
+                    <div id="errorResult2" class="result-display">Error propagado: ±0.45 horas</div>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <h4>Código de Solución</h4>
+                <pre><code>% Problema 36 - Ley de Enfriamiento de Newton
+clear; clc;
+
+% Datos
+T0 = 98.6;  % Temperatura corporal normal (°F)
+Ts = 69;    % Temperatura ambiente (°F)
+T1 = 79.5;  % Primera medición (°F)
+T2 = 78.5;  % Segunda medición (°F)
+
+% Calcular constante k
+k = -log((T2 - Ts)/(T1 - Ts));
+
+% Calcular tiempo transcurrido hasta primera medición
+t1 = log((T0 - Ts)/(T1 - Ts)) / k;
+
+% La muerte ocurrió t1 horas antes de las 9:18 PM
+death_time_hours = t1;
+death_time_minutes = (t1 - floor(t1)) * 60;
+
+fprintf('Constante k: %.4f por hora\n', k);
+fprintf('Tiempo transcurrido: %.2f horas\n', t1);
+fprintf('Hora estimada de muerte: %.0f horas %.0f minutos antes de 9:18 PM\n', ...
+        floor(t1), death_time_minutes);</code></pre>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Calculadora Problema 1
+        function calculateAge() {
+            const percentage = parseFloat(document.getElementById('percentage1').value) / 100;
+            const halfLife = parseFloat(document.getElementById('halflife1').value);
+            
+            const k = Math.log(0.5) / halfLife;
+            const age = Math.log(percentage) / k;
+            const ageRounded = Math.round(age);
+            
+            document.getElementById('result1').innerHTML = 
+                `Constante k: ${k.toExponential(4)} año⁻¹<br>
+                 Edad exacta: ${age.toFixed(1)} años<br>
+                 Edad redondeada: ${ageRounded} años`;
+        }
+
+        // Calculadora Error Problema 1
+        function calculateErrorP1() {
+            const percentage = parseFloat(document.getElementById('percentage1').value) / 100;
+            const halfLife = parseFloat(document.getElementById('halflife1').value);
+            const errorP = parseFloat(document.getElementById('errorP1').value) / 100;
+            const errorHL = parseFloat(document.getElementById('errorT1').value);
+            
+            const k = Math.log(0.5) / halfLife;
+            
+            // Derivadas parciales
+            const dtdP = 1 / (k * percentage);
+            const dtdHL = Math.log(percentage) / (k * k) * Math.log(0.5) / halfLife;
+            
+            // Propagación del error
+            const totalError = Math.sqrt((dtdP * errorP)**2 + (dtdHL * errorHL)**2);
+            
+            document.getElementById('errorResult1').innerHTML = 
+                `Error propagado: ±${totalError.toFixed(1)} años<br>
+                 Contribución del porcentaje: ±${Math.abs(dtdP * errorP).toFixed(1)} años<br>
+                 Contribución de la vida media: ±${Math.abs(dtdHL * errorHL).toFixed(1)} años`;
+        }
+
+        // Calculadora Problema 2
+        function calculateTimeOfDeath() {
+            const T0 = parseFloat(document.getElementById('T0').value);
+            const Ts = parseFloat(document.getElementById('Ts').value);
+            const T1 = parseFloat(document.getElementById('T1').value);
+            const T2 = parseFloat(document.getElementById('T2').value);
+            
+            // Calcular constante k
+            const k = -Math.log((T2 - Ts)/(T1 - Ts));
+            
+            // Calcular tiempo transcurrido
+            const t1 = Math.log((T0 - Ts)/(T1 - Ts)) / k;
+            
+            // Convertir a horas y minutos
+            const hours = Math.floor(t1);
+            const minutes = Math.round((t1 - hours) * 60);
+            
+            document.getElementById('result2').innerHTML = 
+                `Constante k: ${k.toFixed(4)} hora⁻¹<br>
+                 Tiempo transcurrido: ${t1.toFixed(2)} horas<br>
+                 Equivale a: ${hours} horas ${minutes} minutos<br>
+                 La muerte ocurrió aproximadamente ${hours}:${minutes.toString().padStart(2, '0')} antes de las 9:18 PM`;
+        }
+
+        // Calculadora Error Problema 2
+        function calculateErrorP2() {
+            const T0 = parseFloat(document.getElementById('T0').value);
+            const Ts = parseFloat(document.getElementById('Ts').value);
+            const T1 = parseFloat(document.getElementById('T1').value);
+            const T2 = parseFloat(document.getElementById('T2').value);
+            const tempError = parseFloat(document.getElementById('tempError').value);
+            const T0Error = parseFloat(document.getElementById('T0Error').value);
+            const TsError = parseFloat(document.getElementById('TsError').value);
+            
+            // Calcular valores nominales
+            const k = -Math.log((T2 - Ts)/(T1 - Ts));
+            const t1 = Math.log((T0 - Ts)/(T1 - Ts)) / k;
+            
+            // Estimación simple del error (análisis más completo requeriría derivadas parciales)
+            const relativeErrorT = tempError / Math.abs(T1 - T2);
+            const estimatedError = t1 * relativeErrorT;
+            
+            document.getElementById('errorResult2').innerHTML = 
+                `Error estimado: ±${estimatedError.toFixed(2)} horas<br>
+                 Equivale a: ±${Math.round(estimatedError * 60)} minutos<br>
+                 Nota: Error dominado por la precisión de las mediciones de temperatura`;
+        }
+
+        // Smooth scrolling para navegación
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                target.
